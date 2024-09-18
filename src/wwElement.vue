@@ -44,7 +44,7 @@ export default {
   },
   computed: {
     imageUrl() {
-      return this.content.imageUrl || "";
+      return this.content.parallaxImage?.url || "";
     },
     getImageStyle() {
       const maxShift = 20; // Največji premik v pikslih
