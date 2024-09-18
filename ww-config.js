@@ -1,16 +1,13 @@
 export default {
   editor: {
-    label: {
-      en: "My Element",
-    },
+    label: "Parallax Image",
+    icon: "image",
   },
   properties: {
-    textColor: {
-      label: {
-        en: "Text color",
-      },
-      type: "Color",
-      defaultValue: "#F23636",
+    parallaxImage: {
+      label: "Background Image",
+      type: "Image",
+      defaultValue: null,
     },
   },
 };
