@@ -1,6 +1,11 @@
 <template>
   <div class="my-element">
     <p :style="textStyle">{{ displayText }}</p>
+    <div>
+      <button @click="simulateTilt('left')">Nagni levo</button>
+      <button @click="simulateTilt('center')">Center</button>
+      <button @click="simulateTilt('right')">Nagni desno</button>
+    </div>
   </div>
 </template>
 
@@ -12,8 +17,6 @@ export default {
   data() {
     return {
       gamma: 0,
-      eventCount: 0,
-      lastEventTime: null,
     };
   },
   computed: {
@@ -28,58 +31,21 @@ export default {
       return "I am a custom element !";
     },
     displayText() {
-      return `${this.arrowDirection} (Gamma: ${this.gamma.toFixed(
-        2
-      )}, Events: ${this.eventCount})`;
+      return `${this.arrowDirection} (Gamma: ${this.gamma.toFixed(2)})`;
     },
-  },
-  mounted() {
-    this.setupDeviceMotion();
-  },
-  beforeUnmount() {
-    this.removeDeviceMotion();
   },
   methods: {
-    setupDeviceMotion() {
-      if (typeof window !== "undefined") {
-        if (window.DeviceMotionEvent) {
-          if (typeof DeviceMotionEvent.requestPermission === "function") {
-            // iOS 13+ zahteva dovoljenje
-            DeviceMotionEvent.requestPermission()
-              .then((permissionState) => {
-                if (permissionState === "granted") {
-                  window.addEventListener("devicemotion", this.handleMotion);
-                } else {
-                  console.log("Dovoljenje za zaznavanje gibanja zavrnjeno");
-                }
-              })
-              .catch(console.error);
-          } else {
-            // Starejše naprave ali Android
-            window.addEventListener("devicemotion", this.handleMotion);
-          }
-        } else {
-          console.log("DeviceMotionEvent ni podprt na tej napravi");
-        }
+    simulateTilt(direction) {
+      switch (direction) {
+        case "left":
+          this.gamma = -15;
+          break;
+        case "right":
+          this.gamma = 15;
+          break;
+        default:
+          this.gamma = 0;
       }
-    },
-    removeDeviceMotion() {
-      if (typeof window !== "undefined" && window.DeviceMotionEvent) {
-        window.removeEventListener("devicemotion", this.handleMotion);
-      }
-    },
-    handleMotion(event) {
-      this.eventCount++;
-      this.lastEventTime = new Date().toISOString();
-      if (event.rotationRate) {
-        this.gamma = event.rotationRate.gamma || 0;
-      } else if (event.accelerationIncludingGravity) {
-        // Alternativni način za starejše naprave
-        this.gamma = event.accelerationIncludingGravity.y || 0;
-      }
-      console.log(
-        `Dogodek: ${this.eventCount}, Čas: ${this.lastEventTime}, Gamma: ${this.gamma}`
-      );
     },
   },
 };
@@ -89,6 +55,11 @@ export default {
 .my-element {
   p {
     font-size: 18px;
+    margin-bottom: 10px;
+  }
+  button {
+    margin: 0 5px;
+    padding: 5px 10px;
   }
 }
 </style>
