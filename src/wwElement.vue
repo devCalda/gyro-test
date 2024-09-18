@@ -1,7 +1,7 @@
 <template>
-  <div class="parallax-container" ref="container">
+  <div v-if="imageLayers.length > 0" class="parallax-container" ref="container">
     <div
-      v-for="(layer, index) in content.imageLayers"
+      v-for="(layer, index) in imageLayers"
       :key="index"
       class="parallax-layer"
       :style="getLayerStyle(index)"
@@ -27,6 +27,7 @@
       Omogoči zaznavanje gibanja
     </button>
   </div>
+  <div v-else class="error">Ni slik za prikaz parallax efekta</div>
 </template>
 
 <script>
@@ -45,22 +46,31 @@ export default {
     };
   },
   computed: {
+    imageLayers() {
+      return this.content.imageLayers || [];
+    },
     totalLayers() {
-      return this.content.imageLayers ? this.content.imageLayers.length : 0;
+      return this.imageLayers.length;
     },
   },
   mounted() {
+    console.log("Content:", this.content);
+    console.log("Image Layers:", this.content.imageLayers);
     this.checkDeviceMotionSupport();
   },
   methods: {
     checkDeviceMotionSupport() {
-      this.isSupported = window.DeviceMotionEvent !== undefined;
-      if (this.isSupported) {
-        if (typeof DeviceMotionEvent.requestPermission === "function") {
-          this.needsManualPermission = true;
-        } else {
-          this.startListening();
+      if (typeof window !== "undefined") {
+        this.isSupported = window.DeviceMotionEvent !== undefined;
+        if (this.isSupported) {
+          if (typeof DeviceMotionEvent.requestPermission === "function") {
+            this.needsManualPermission = true;
+          } else {
+            this.startListening();
+          }
         }
+      } else {
+        this.isSupported = false;
       }
     },
     requestPermissionManually() {
