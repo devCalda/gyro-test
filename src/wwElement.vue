@@ -1,6 +1,18 @@
 <template>
-  <div class="my-element">
-    <p :style="textStyle">{{ displayText }}</p>
+  <div class="parallax-container" ref="container">
+    <div
+      v-for="(layer, index) in imageLayers"
+      :key="index"
+      class="parallax-layer"
+      :style="getLayerStyle(index)"
+    >
+      <img
+        :src="layer"
+        :alt="`Layer ${index + 1}`"
+        @load="onImageLoad(index)"
+      />
+    </div>
+    <div v-if="loading" class="loading">Nalaganje...</div>
   </div>
 </template>
 
@@ -8,32 +20,20 @@
 export default {
   props: {
     content: { type: Object, required: true },
+    imageLayers: { type: Array, required: true },
   },
   data() {
     return {
-      gamma: 0,
+      loading: true,
+      loadedImages: 0,
+      gyroData: { x: 0, y: 0 },
       isSupported: false,
       permissionState: "prompt",
     };
   },
   computed: {
-    textStyle() {
-      return {
-        color: this.content.textColor,
-      };
-    },
-    arrowDirection() {
-      if (!this.isSupported || this.permissionState !== "granted")
-        return "Potrebno dovoljenje";
-      if (this.gamma > 10) return "→";
-      if (this.gamma < -10) return "←";
-      return "I am a custom element !";
-    },
-    displayText() {
-      if (!this.isSupported) return "Naprava ne podpira zaznavanja gibanja";
-      if (this.permissionState !== "granted")
-        return "Zahtevam dovoljenje za zaznavanje gibanja...";
-      return `${this.arrowDirection} (Gamma: ${this.gamma.toFixed(2)})`;
+    totalLayers() {
+      return this.imageLayers.length;
     },
   },
   mounted() {
@@ -43,34 +43,49 @@ export default {
     checkDeviceMotionSupport() {
       this.isSupported = window.DeviceMotionEvent !== undefined;
       if (this.isSupported) {
-        this.requestPermissionAndStart();
+        if (typeof DeviceMotionEvent.requestPermission === "function") {
+          this.requestPermissionManually();
+        } else {
+          this.startListening();
+        }
       }
     },
-    requestPermissionAndStart() {
-      if (typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission()
-          .then((permissionState) => {
-            this.permissionState = permissionState;
-            if (permissionState === "granted") {
-              this.startListening();
-            }
-          })
-          .catch((error) => {
-            console.error("Napaka pri zahtevanju dovoljenja:", error);
-            this.permissionState = "denied";
-          });
-      } else {
-        // Za naprave, ki ne zahtevajo eksplicitnega dovoljenja
-        this.permissionState = "granted";
-        this.startListening();
-      }
+    requestPermissionManually() {
+      DeviceMotionEvent.requestPermission()
+        .then((permissionState) => {
+          this.permissionState = permissionState;
+          if (permissionState === "granted") {
+            this.startListening();
+          }
+        })
+        .catch(console.error);
     },
     startListening() {
       window.addEventListener("devicemotion", this.handleMotion);
+      this.permissionState = "granted";
     },
     handleMotion(event) {
-      if (event.rotationRate) {
-        this.gamma = event.rotationRate.gamma || 0;
+      const { beta, gamma } = event.rotationRate || {};
+      if (beta !== null && gamma !== null) {
+        this.gyroData = {
+          x: gamma * 0.5,
+          y: beta * 0.5,
+        };
+      }
+    },
+    getLayerStyle(index) {
+      const sensitivity = (index + 1) * 4;
+      const translateX = this.gyroData.x * sensitivity;
+      const translateY = this.gyroData.y * sensitivity;
+      return {
+        transform: `translate(${translateX}px, ${translateY}px)`,
+        zIndex: index + 1,
+      };
+    },
+    onImageLoad(index) {
+      this.loadedImages++;
+      if (this.loadedImages === this.totalLayers) {
+        this.loading = false;
       }
     },
   },
@@ -80,11 +95,30 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-.my-element {
-  p {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
+<style scoped>
+.parallax-container {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+}
+.parallax-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+.parallax-layer img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>
