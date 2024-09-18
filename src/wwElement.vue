@@ -1,33 +1,41 @@
 <template>
-  <div v-if="imageLayers.length > 0" class="parallax-container" ref="container">
-    <div
-      v-for="(layer, index) in imageLayers"
-      :key="index"
-      class="parallax-layer"
-      :style="getLayerStyle(index)"
-    >
-      <img
-        :src="layer"
-        :alt="`Layer ${index + 1}`"
-        @load="onImageLoad(index)"
-      />
+  <div class="parallax-container" ref="container">
+    <div v-if="permissionState === 'granted' && imageLayers.length > 0">
+      <div
+        v-for="(layer, index) in imageLayers"
+        :key="index"
+        class="parallax-layer"
+        :style="getLayerStyle(index)"
+      >
+        <img
+          :src="layer"
+          :alt="`Layer ${index + 1}`"
+          @load="onImageLoad(index)"
+        />
+      </div>
     </div>
-    <div v-if="loading" class="loading">Nalaganje...</div>
-    <div v-if="!isSupported" class="error">
+    <div v-else-if="loading" class="message">Nalaganje...</div>
+    <div v-else-if="!isSupported" class="message">
       Naprava ne podpira zaznavanja gibanja
     </div>
-    <div v-if="permissionState === 'denied'" class="error">
+    <div v-else-if="permissionState === 'denied'" class="message">
       Dovoljenje za zaznavanje gibanja je zavrnjeno
     </div>
+    <div v-else-if="imageLayers.length === 0" class="message">
+      Ni slik za prikaz parallax efekta
+    </div>
     <button
-      v-if="needsManualPermission"
-      @click="requestPermissionManually"
+      v-if="permissionState === 'prompt'"
+      @click="requestPermission"
       class="permission-button"
     >
-      Omogoči zaznavanje gibanja
+      Začni demonstracijo
     </button>
+    <div v-if="permissionState === 'granted'" class="sensor-data">
+      <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
+      <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
+    </div>
   </div>
-  <div v-else class="error">Ni slik za prikaz parallax efekta</div>
 </template>
 
 <script>
@@ -42,7 +50,6 @@ export default {
       gyroData: { x: 0, y: 0 },
       isSupported: false,
       permissionState: "prompt",
-      needsManualPermission: false,
     };
   },
   computed: {
@@ -60,50 +67,41 @@ export default {
   },
   methods: {
     checkDeviceMotionSupport() {
-      if (typeof window !== "undefined") {
-        this.isSupported = window.DeviceMotionEvent !== undefined;
-        if (this.isSupported) {
-          if (typeof DeviceMotionEvent.requestPermission === "function") {
-            this.needsManualPermission = true;
-          } else {
-            this.startListening();
-          }
-        }
+      if (typeof window !== "undefined" && window.DeviceOrientationEvent) {
+        this.isSupported = true;
       } else {
         this.isSupported = false;
       }
     },
-    requestPermissionManually() {
-      if (typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission()
+    requestPermission() {
+      if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission()
           .then((permissionState) => {
             this.permissionState = permissionState;
             if (permissionState === "granted") {
               this.startListening();
-              this.needsManualPermission = false;
             }
           })
           .catch((error) => {
             console.error("Napaka pri zahtevanju dovoljenja:", error);
             this.permissionState = "denied";
           });
+      } else {
+        this.permissionState = "granted";
+        this.startListening();
       }
     },
     startListening() {
-      window.addEventListener("devicemotion", this.handleMotion);
-      this.permissionState = "granted";
+      window.addEventListener("deviceorientation", this.handleOrientation);
     },
-    handleMotion(event) {
-      const { beta, gamma } = event.rotationRate || {};
-      if (beta !== null && gamma !== null) {
-        this.gyroData = {
-          x: gamma * 0.5,
-          y: beta * 0.5,
-        };
-      }
+    handleOrientation(event) {
+      this.gyroData = {
+        x: event.gamma || 0,
+        y: event.beta || 0,
+      };
     },
     getLayerStyle(index) {
-      const sensitivity = (index + 1) * 4;
+      const sensitivity = (index + 1) * 0.5;
       const translateX = this.gyroData.x * sensitivity;
       const translateY = this.gyroData.y * sensitivity;
       return {
@@ -119,7 +117,7 @@ export default {
     },
   },
   beforeUnmount() {
-    window.removeEventListener("devicemotion", this.handleMotion);
+    window.removeEventListener("deviceorientation", this.handleOrientation);
   },
 };
 </script>
@@ -130,6 +128,9 @@ export default {
   width: 100%;
   height: 500px;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .parallax-layer {
   position: absolute;
@@ -144,27 +145,28 @@ export default {
   height: 100%;
   object-fit: cover;
 }
-.loading,
-.error {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.message {
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 10px;
   border-radius: 5px;
+  text-align: center;
 }
 .permission-button {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 10px 20px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+}
+.sensor-data {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
 }
 </style>
