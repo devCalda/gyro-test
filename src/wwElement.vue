@@ -27,19 +27,19 @@ export default {
     },
   },
   mounted() {
-    window.addEventListener("keydown", this.handleKeyPress);
+    if (typeof window !== "undefined" && window.DeviceMotionEvent) {
+      window.addEventListener("devicemotion", this.handleMotion);
+    }
   },
   beforeUnmount() {
-    window.removeEventListener("keydown", this.handleKeyPress);
+    if (typeof window !== "undefined" && window.DeviceMotionEvent) {
+      window.removeEventListener("devicemotion", this.handleMotion);
+    }
   },
   methods: {
-    handleKeyPress(event) {
-      if (event.key === "ArrowLeft") {
-        this.gamma = -15;
-      } else if (event.key === "ArrowRight") {
-        this.gamma = 15;
-      } else {
-        this.gamma = 0;
+    handleMotion(event) {
+      if (event.rotationRate) {
+        this.gamma = event.rotationRate.gamma;
       }
     },
   },
