@@ -10,4 +10,8 @@ export default {
       defaultValue: null,
     },
   },
+  
+  getElementStyleObject(content) {
+    return {};
+  },
 };
