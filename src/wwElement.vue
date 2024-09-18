@@ -1,7 +1,7 @@
 <template>
   <div class="parallax-container" ref="container">
     <div
-      v-for="(layer, index) in imageLayers"
+      v-for="(layer, index) in content.imageLayers"
       :key="index"
       class="parallax-layer"
       :style="getLayerStyle(index)"
@@ -13,6 +13,19 @@
       />
     </div>
     <div v-if="loading" class="loading">Nalaganje...</div>
+    <div v-if="!isSupported" class="error">
+      Naprava ne podpira zaznavanja gibanja
+    </div>
+    <div v-if="permissionState === 'denied'" class="error">
+      Dovoljenje za zaznavanje gibanja je zavrnjeno
+    </div>
+    <button
+      v-if="needsManualPermission"
+      @click="requestPermissionManually"
+      class="permission-button"
+    >
+      Omogoči zaznavanje gibanja
+    </button>
   </div>
 </template>
 
@@ -20,7 +33,6 @@
 export default {
   props: {
     content: { type: Object, required: true },
-    imageLayers: { type: Array, required: true },
   },
   data() {
     return {
@@ -29,11 +41,12 @@ export default {
       gyroData: { x: 0, y: 0 },
       isSupported: false,
       permissionState: "prompt",
+      needsManualPermission: false,
     };
   },
   computed: {
     totalLayers() {
-      return this.imageLayers.length;
+      return this.content.imageLayers ? this.content.imageLayers.length : 0;
     },
   },
   mounted() {
@@ -44,21 +57,27 @@ export default {
       this.isSupported = window.DeviceMotionEvent !== undefined;
       if (this.isSupported) {
         if (typeof DeviceMotionEvent.requestPermission === "function") {
-          this.requestPermissionManually();
+          this.needsManualPermission = true;
         } else {
           this.startListening();
         }
       }
     },
     requestPermissionManually() {
-      DeviceMotionEvent.requestPermission()
-        .then((permissionState) => {
-          this.permissionState = permissionState;
-          if (permissionState === "granted") {
-            this.startListening();
-          }
-        })
-        .catch(console.error);
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission()
+          .then((permissionState) => {
+            this.permissionState = permissionState;
+            if (permissionState === "granted") {
+              this.startListening();
+              this.needsManualPermission = false;
+            }
+          })
+          .catch((error) => {
+            console.error("Napaka pri zahtevanju dovoljenja:", error);
+            this.permissionState = "denied";
+          });
+      }
     },
     startListening() {
       window.addEventListener("devicemotion", this.handleMotion);
@@ -115,10 +134,27 @@ export default {
   height: 100%;
   object-fit: cover;
 }
-.loading {
+.loading,
+.error {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+}
+.permission-button {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 </style>
