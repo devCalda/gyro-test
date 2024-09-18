@@ -11,10 +11,6 @@
             : "Omogoči premikanje slike"
         }}
       </button>
-      <div v-if="permissionState === 'granted'" class="sensor-data">
-        <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
-        <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
-      </div>
     </div>
   </div>
 </template>
@@ -37,9 +33,9 @@ export default {
       return "https://images.rawpixel.com/image_png_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvcHUyMzMxNzg4LWltYWdlLXJtNTAzLTAxXzEtbDBqOXFyYzMucG5n.png";
     },
     getImageStyle() {
-      const maxShift = 20; // Največji premik v pikslih
-      const shiftX = (this.gyroData.x / 90) * maxShift;
-      const shiftY = (this.gyroData.y / 90) * maxShift;
+      const maxShift = 50; // Povečamo največji premik na 50 pikslov
+      const shiftX = (this.gyroData.x / 45) * maxShift; // Povečamo občutljivost
+      const shiftY = (this.gyroData.y / 45) * maxShift; // Povečamo občutljivost
       return {
         transform: `translate(${shiftX}px, ${shiftY}px)`,
         transition: "transform 0.1s ease-out",
@@ -105,21 +101,21 @@ export default {
 .parallax-container {
   position: relative;
   width: 100%;
-  height: 500px; /* Povečamo višino */
+  height: 500px;
   overflow: hidden;
 }
 .parallax-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: -50px; /* Dodamo negativni odmik zgoraj */
+  left: -50px; /* Dodamo negativni odmik levo */
+  width: calc(100% + 100px); /* Povečamo širino za 100px */
+  height: calc(100% + 100px); /* Povečamo višino za 100px */
   will-change: transform;
 }
 .parallax-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Spremenimo nazaj v 'cover' za boljše polnjenje prostora */
+  object-fit: cover;
 }
 .controls {
   position: absolute;
@@ -128,7 +124,7 @@ export default {
   width: 100%;
   display: flex;
   justify-content: center;
-  z-index: 10; /* Zagotovimo, da so kontrole nad sliko */
+  z-index: 10;
 }
 .permission-button {
   padding: 10px 20px;
@@ -137,12 +133,5 @@ export default {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-}
-.sensor-data {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
 }
 </style>
