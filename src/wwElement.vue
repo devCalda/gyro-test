@@ -1,5 +1,6 @@
 <template>
   <div class="parallax-container" ref="container">
+    <h2>Parallax Image Component</h2>
     <div class="parallax-image" :style="getImageStyle">
       <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
     </div>
@@ -16,6 +17,7 @@
         <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
       </div>
     </div>
+    <p>Current state: {{ currentState }}</p>
   </div>
 </template>
 
