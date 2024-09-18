@@ -1,23 +1,21 @@
 <template>
   <div class="parallax-container" ref="container">
-    <h2>Parallax Image Component</h2>
     <div class="parallax-image" :style="getImageStyle">
       <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
     </div>
     <div class="controls">
-      <button
-        v-if="permissionState === 'prompt'"
-        @click="requestPermission"
-        class="permission-button"
-      >
-        Omogoči premikanje slike
+      <button @click="requestPermission" class="permission-button">
+        {{
+          permissionState === "granted"
+            ? "Premikanje omogočeno"
+            : "Omogoči premikanje slike"
+        }}
       </button>
       <div v-if="permissionState === 'granted'" class="sensor-data">
         <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
         <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
       </div>
     </div>
-    <p>Current state: {{ currentState }}</p>
   </div>
 </template>
 
@@ -49,29 +47,14 @@ export default {
     },
   },
   mounted() {
-    console.log("Component mounted");
-    console.log("Image URL:", this.imageUrl);
-    this.checkPermissionAndSupport();
+    this.checkDeviceMotionSupport();
   },
   methods: {
-    checkPermissionAndSupport() {
-      if (typeof window !== "undefined") {
-        const savedPermission = localStorage.getItem("orientationPermission");
-        if (savedPermission === "granted") {
-          this.permissionState = "granted";
-          this.startListening();
-        } else {
-          this.checkDeviceMotionSupport();
-        }
-      } else {
-        this.isSupported = false;
-      }
-    },
     checkDeviceMotionSupport() {
       if (window.DeviceOrientationEvent) {
         this.isSupported = true;
         if (typeof DeviceOrientationEvent.requestPermission === "function") {
-          this.permissionState = "prompt";
+          this.requestPermission(); // Poskusimo samodejno zahtevati dovoljenje
         } else {
           this.permissionState = "granted";
           this.startListening();
@@ -86,7 +69,6 @@ export default {
           .then((permissionState) => {
             this.permissionState = permissionState;
             if (permissionState === "granted") {
-              localStorage.setItem("orientationPermission", "granted");
               this.startListening();
             }
           })
@@ -96,7 +78,6 @@ export default {
           });
       } else {
         this.permissionState = "granted";
-        localStorage.setItem("orientationPermission", "granted");
         this.startListening();
       }
     },
