@@ -1,26 +1,15 @@
 <template>
   <div class="parallax-container" ref="container">
-    <div v-if="permissionState === 'granted' && imageUrl">
-      <div class="parallax-image" :style="getImageStyle">
-        <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
-      </div>
+    <div v-if="imageUrl" class="parallax-image" :style="getImageStyle">
+      <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
     </div>
-    <div v-else-if="loading" class="message">Nalaganje...</div>
-    <div v-else-if="!isSupported" class="message">
-      Naprava ne podpira zaznavanja gibanja
-    </div>
-    <div v-else-if="permissionState === 'denied'" class="message">
-      Dovoljenje za zaznavanje gibanja je zavrnjeno
-    </div>
-    <div v-else-if="!imageUrl" class="message">
-      Ni slike za prikaz parallax efekta
-    </div>
+    <div v-else class="message">Ni slike za prikaz parallax efekta</div>
     <button
       v-if="permissionState === 'prompt'"
       @click="requestPermission"
       class="permission-button"
     >
-      Začni demonstracijo
+      Omogoči premikanje slike
     </button>
     <div v-if="permissionState === 'granted'" class="sensor-data">
       <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
