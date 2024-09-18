@@ -51,12 +51,31 @@ export default {
   mounted() {
     console.log("Component mounted");
     console.log("Image URL:", this.imageUrl);
-    this.checkDeviceMotionSupport();
+    this.checkPermissionAndSupport();
   },
   methods: {
+    checkPermissionAndSupport() {
+      if (typeof window !== "undefined") {
+        const savedPermission = localStorage.getItem("orientationPermission");
+        if (savedPermission === "granted") {
+          this.permissionState = "granted";
+          this.startListening();
+        } else {
+          this.checkDeviceMotionSupport();
+        }
+      } else {
+        this.isSupported = false;
+      }
+    },
     checkDeviceMotionSupport() {
-      if (typeof window !== "undefined" && window.DeviceOrientationEvent) {
+      if (window.DeviceOrientationEvent) {
         this.isSupported = true;
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
+          this.permissionState = "prompt";
+        } else {
+          this.permissionState = "granted";
+          this.startListening();
+        }
       } else {
         this.isSupported = false;
       }
@@ -67,6 +86,7 @@ export default {
           .then((permissionState) => {
             this.permissionState = permissionState;
             if (permissionState === "granted") {
+              localStorage.setItem("orientationPermission", "granted");
               this.startListening();
             }
           })
@@ -76,6 +96,7 @@ export default {
           });
       } else {
         this.permissionState = "granted";
+        localStorage.setItem("orientationPermission", "granted");
         this.startListening();
       }
     },
