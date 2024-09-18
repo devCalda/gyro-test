@@ -1,9 +1,8 @@
 <template>
   <div class="parallax-container" ref="container">
-    <div v-if="imageUrl" class="parallax-image" :style="getImageStyle">
+    <div class="parallax-image" :style="getImageStyle">
       <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
     </div>
-    <div v-else class="message">Ni slike za prikaz parallax efekta</div>
     <button
       v-if="permissionState === 'prompt'"
       @click="requestPermission"
@@ -33,7 +32,7 @@ export default {
   },
   computed: {
     imageUrl() {
-      return this.content.parallaxImage?.url || "";
+      return "https://images.rawpixel.com/image_png_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvcHUyMzMxNzg4LWltYWdlLXJtNTAzLTAxXzEtbDBqOXFyYzMucG5n.png";
     },
     getImageStyle() {
       const maxShift = 20; // Največji premik v pikslih
@@ -46,7 +45,7 @@ export default {
     },
   },
   mounted() {
-    console.log("Content:", this.content);
+    console.log("Component mounted");
     console.log("Image URL:", this.imageUrl);
     this.checkDeviceMotionSupport();
   },
@@ -86,6 +85,7 @@ export default {
       };
     },
     onImageLoad() {
+      console.log("Slika naložena");
       this.loading = false;
     },
   },
@@ -101,22 +101,19 @@ export default {
   width: 100%;
   height: 300px;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 .parallax-image {
   position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   will-change: transform;
 }
 .parallax-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Spremenimo v 'contain', da ohranimo razmerje slike */
 }
 .message {
   background-color: rgba(0, 0, 0, 0.7);
