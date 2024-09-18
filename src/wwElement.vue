@@ -11,49 +11,16 @@
 </template>
 
 <script>
-import { useDeviceMotion, usePermission } from "@vueuse/core";
-import { computed, ref, watch } from "vue";
-
 export default {
   props: {
     content: { type: Object, required: true },
   },
-  setup() {
-    const { gamma, isSupported } = useDeviceMotion();
-    const motionPermission = usePermission("accelerometer");
-    const permissionState = ref(motionPermission.state);
-
-    const arrowDirection = computed(() => {
-      if (!isSupported || permissionState.value !== "granted")
-        return "Potrebno dovoljenje";
-      if (gamma.value > 10) return "→";
-      if (gamma.value < -10) return "←";
-      return "I am a custom element !";
-    });
-
-    const displayText = computed(() => {
-      if (!isSupported) return "Naprava ne podpira zaznavanja gibanja";
-      if (permissionState.value !== "granted")
-        return "Potrebno dovoljenje za zaznavanje gibanja";
-      return `${arrowDirection.value} (Gamma: ${
-        gamma.value?.toFixed(2) ?? "N/A"
-      })`;
-    });
-
-    const requestPermission = async () => {
-      if (typeof DeviceMotionEvent.requestPermission === "function") {
-        const permission = await DeviceMotionEvent.requestPermission();
-        permissionState.value = permission;
-      } else {
-        permissionState.value = "granted";
-      }
+  data() {
+    return {
+      gamma: 0,
+      isSupported: false,
+      permissionState: "prompt",
     };
-
-    watch(motionPermission, (newState) => {
-      permissionState.value = newState;
-    });
-
-    return { displayText, isSupported, permissionState, requestPermission };
   },
   computed: {
     textStyle() {
@@ -61,6 +28,62 @@ export default {
         color: this.content.textColor,
       };
     },
+    arrowDirection() {
+      if (!this.isSupported || this.permissionState !== "granted")
+        return "Potrebno dovoljenje";
+      if (this.gamma > 10) return "→";
+      if (this.gamma < -10) return "←";
+      return "I am a custom element !";
+    },
+    displayText() {
+      if (!this.isSupported) return "Naprava ne podpira zaznavanja gibanja";
+      if (this.permissionState !== "granted")
+        return "Potrebno dovoljenje za zaznavanje gibanja";
+      return `${this.arrowDirection} (Gamma: ${this.gamma.toFixed(2)})`;
+    },
+  },
+  mounted() {
+    this.checkDeviceMotionSupport();
+  },
+  methods: {
+    checkDeviceMotionSupport() {
+      this.isSupported = window.DeviceMotionEvent !== undefined;
+      if (
+        this.isSupported &&
+        typeof DeviceMotionEvent.requestPermission === "function"
+      ) {
+        this.permissionState = "prompt";
+      } else if (this.isSupported) {
+        this.permissionState = "granted";
+        this.startListening();
+      }
+    },
+    requestPermission() {
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission()
+          .then((permissionState) => {
+            this.permissionState = permissionState;
+            if (permissionState === "granted") {
+              this.startListening();
+            }
+          })
+          .catch(console.error);
+      } else {
+        this.permissionState = "granted";
+        this.startListening();
+      }
+    },
+    startListening() {
+      window.addEventListener("devicemotion", this.handleMotion);
+    },
+    handleMotion(event) {
+      if (event.rotationRate) {
+        this.gamma = event.rotationRate.gamma || 0;
+      }
+    },
+  },
+  beforeUnmount() {
+    window.removeEventListener("devicemotion", this.handleMotion);
   },
 };
 </script>
