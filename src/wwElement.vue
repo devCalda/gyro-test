@@ -1,12 +1,6 @@
 <template>
   <div class="my-element">
     <p :style="textStyle">{{ displayText }}</p>
-    <button
-      v-if="!isSupported || permissionState !== 'granted'"
-      @click="requestPermission"
-    >
-      Omogoči zaznavanje gibanja
-    </button>
   </div>
 </template>
 
@@ -38,7 +32,7 @@ export default {
     displayText() {
       if (!this.isSupported) return "Naprava ne podpira zaznavanja gibanja";
       if (this.permissionState !== "granted")
-        return "Potrebno dovoljenje za zaznavanje gibanja";
+        return "Zahtevam dovoljenje za zaznavanje gibanja...";
       return `${this.arrowDirection} (Gamma: ${this.gamma.toFixed(2)})`;
     },
   },
@@ -48,17 +42,11 @@ export default {
   methods: {
     checkDeviceMotionSupport() {
       this.isSupported = window.DeviceMotionEvent !== undefined;
-      if (
-        this.isSupported &&
-        typeof DeviceMotionEvent.requestPermission === "function"
-      ) {
-        this.permissionState = "prompt";
-      } else if (this.isSupported) {
-        this.permissionState = "granted";
-        this.startListening();
+      if (this.isSupported) {
+        this.requestPermissionAndStart();
       }
     },
-    requestPermission() {
+    requestPermissionAndStart() {
       if (typeof DeviceMotionEvent.requestPermission === "function") {
         DeviceMotionEvent.requestPermission()
           .then((permissionState) => {
@@ -67,8 +55,12 @@ export default {
               this.startListening();
             }
           })
-          .catch(console.error);
+          .catch((error) => {
+            console.error("Napaka pri zahtevanju dovoljenja:", error);
+            this.permissionState = "denied";
+          });
       } else {
+        // Za naprave, ki ne zahtevajo eksplicitnega dovoljenja
         this.permissionState = "granted";
         this.startListening();
       }
@@ -93,10 +85,6 @@ export default {
   p {
     font-size: 18px;
     margin-bottom: 10px;
-  }
-  button {
-    padding: 5px 10px;
-    margin-top: 10px;
   }
 }
 </style>
