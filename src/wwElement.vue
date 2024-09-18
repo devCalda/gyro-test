@@ -3,16 +3,18 @@
     <div class="parallax-image" :style="getImageStyle">
       <img :src="imageUrl" alt="Parallax Image" @load="onImageLoad" />
     </div>
-    <button
-      v-if="permissionState === 'prompt'"
-      @click="requestPermission"
-      class="permission-button"
-    >
-      Omogoči premikanje slike
-    </button>
-    <div v-if="permissionState === 'granted'" class="sensor-data">
-      <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
-      <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
+    <div class="controls">
+      <button
+        v-if="permissionState === 'prompt'"
+        @click="requestPermission"
+        class="permission-button"
+      >
+        Omogoči premikanje slike
+      </button>
+      <div v-if="permissionState === 'granted'" class="sensor-data">
+        <p>Beta (X-os): {{ gyroData.y.toFixed(2) }}°</p>
+        <p>Gamma (Y-os): {{ gyroData.x.toFixed(2) }}°</p>
+      </div>
     </div>
   </div>
 </template>
@@ -99,7 +101,7 @@ export default {
 .parallax-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 500px; /* Povečamo višino */
   overflow: hidden;
 }
 .parallax-image {
@@ -113,14 +115,16 @@ export default {
 .parallax-image img {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Spremenimo v 'contain', da ohranimo razmerje slike */
+  object-fit: cover; /* Spremenimo nazaj v 'cover' za boljše polnjenje prostora */
 }
-.message {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 10; /* Zagotovimo, da so kontrole nad sliko */
 }
 .permission-button {
   padding: 10px 20px;
@@ -131,12 +135,10 @@ export default {
   cursor: pointer;
 }
 .sensor-data {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 10px;
   border-radius: 5px;
+  text-align: center;
 }
 </style>
